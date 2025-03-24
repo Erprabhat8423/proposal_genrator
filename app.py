@@ -8,9 +8,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 # Configuration
-OPENAI_API_KEY = st.secrets["credentials"]["openai_api_key"]
+OPENAI_API_KEY = st.secrets["credentials"]["OPENAI_API_KEY"]
 JSON_FILE = "proposals.json"
 openai.api_key = OPENAI_API_KEY
+# st.write("Secrets loaded:", st.secrets)
 
 # Load & Save Proposals
 def load_proposals():
