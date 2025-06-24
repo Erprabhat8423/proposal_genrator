@@ -106,7 +106,7 @@ def generate_proposal(jd_text, similar):
     first_line = jd_text.strip().split("\n")[0] if jd_text.strip() else "your project requirements"
 
     prompt = f"""
-    You are an expert proposal writer generating a simple, friendly, and custom proposal for a job description.
+    You are an expert proposal writer generating a simple, casual, and custom proposal for a job description.
 
     - Use simple, easy-to-understand language (8th–10th grade level).
     - Do NOT use headings (no "Relevant Case Study", "Proposed Approach" etc.)
