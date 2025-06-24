@@ -63,71 +63,30 @@ def generate_proposal(jd_text, similar):
         for proj, _ in similar[:1]
     ]) if similar else ""
 
-    prompt = f"""
-    Generate a client proposal following this EXACT structure:
-
-    - Start with: \"Dear Client,\"
-    - Introduce yourself: \"My name is Tarsem Singh, and I am a Power BI expert with 8+ years of experience in business intelligence, data modeling, and dashboarding.\"
-    - Briefly state your understanding of the client's needs.
-
-    2. **Relevant Case Study** (Include ONLY if relevant)
-    {case_study}
-
-    3. **Proposed Approach**
-    - Our understanding of your requirements
-    - Step-by-step methodology
-    - Technology stack recommendation
-    - Questions for clarification (if needed)
-
-    4. **Why Choose Me?**
-    - Highlight your differentiators specific to the project needs
-    - Include portfolio link: {portfolio_link}
-    - Final call to action
-
-    **Job Description:**
-    {jd_text}
-
-    **Mandatory Guidelines:**
-    - Always start with \"Dear Client,\"
-    - Always introduce yourself with \"My name is Tarsem Singh...\"
-    - Always end with \"Best regards, Tarsem Singh\"
-    - Use ONLY verified past projects from our database
-    - Maximum 2 case studies, even 1 if highly relevant
-    - Problem-Solution-Outcome format for case studies
-    - Professional but conversational tone
-    - Max 600 words
-    - No technical jargon unless required
-
-    **Strict Prohibitions:**
-    - No fictional projects/statistics
-    - No generic sales pitches
-    - No assumptions beyond JD scope
-    """
-    # first_line = jd_text.strip().split("\n")[0] if jd_text.strip() else "your project requirements"
-
     # prompt = f"""
-    # You are an expert proposal writer generating a simple, friendly, and custom proposal for a job description.
+    # Generate a client proposal following this EXACT structure:
 
-    # - Use simple, easy-to-understand language (8th–10th grade level).
-    # - Do NOT use headings (no "Relevant Case Study", "Proposed Approach" etc.)
-    # - Write as a natural flowing narrative, not in sections.
-    # - Begin with "Dear Client,"
-    # - Introduce yourself as: "My name is Tarsem Singh, and I am a Power BI expert with 8+ years of experience..."
-    # - Show clear understanding of the client's needs.
-    # - Briefly and naturally mention the case study below as a supporting example.
-    # - Then explain how you will approach their needs (methodology, tools, tech stack).
-    # - End with why you’re a good fit and include this portfolio link: {portfolio_link}
-    # - Finish with "Best regards, Tarsem Singh"
-    # - Keep the proposal under 450 words (max 600 tokens).
-    # - Avoid technical jargon unless absolutely needed.
+    # - Start with: \"Dear Client,\"
+    # - Introduce yourself: \"My name is Tarsem Singh, and I am a Power BI expert with 8+ years of experience in business intelligence, data modeling, and dashboarding.\"
+    # - Briefly state your understanding of the client's needs.
 
-    # The client’s job description starts with: "{first_line}"
-
-    # Here’s a relevant project you can refer to:
+    # 2. **Relevant Case Study** (Include ONLY if relevant)
     # {case_study}
 
-    # The full job description is:
+    # 3. **Proposed Approach**
+    # - Our understanding of your requirements
+    # - Step-by-step methodology
+    # - Technology stack recommendation
+    # - Questions for clarification (if needed)
+
+    # 4. **Why Choose Me?**
+    # - Highlight your differentiators specific to the project needs
+    # - Include portfolio link: {portfolio_link}
+    # - Final call to action
+
+    # **Job Description:**
     # {jd_text}
+
     # **Mandatory Guidelines:**
     # - Always start with \"Dear Client,\"
     # - Always introduce yourself with \"My name is Tarsem Singh...\"
@@ -136,7 +95,7 @@ def generate_proposal(jd_text, similar):
     # - Maximum 2 case studies, even 1 if highly relevant
     # - Problem-Solution-Outcome format for case studies
     # - Professional but conversational tone
-    # - Max 450 words
+    # - Max 600 words
     # - No technical jargon unless required
 
     # **Strict Prohibitions:**
@@ -144,6 +103,47 @@ def generate_proposal(jd_text, similar):
     # - No generic sales pitches
     # - No assumptions beyond JD scope
     # """
+    first_line = jd_text.strip().split("\n")[0] if jd_text.strip() else "your project requirements"
+
+    prompt = f"""
+    You are an expert proposal writer generating a simple, friendly, and custom proposal for a job description.
+
+    - Use simple, easy-to-understand language (8th–10th grade level).
+    - Do NOT use headings (no "Relevant Case Study", "Proposed Approach" etc.)
+    - Write as a natural flowing narrative, not in sections.
+    - Begin with "Dear Client,"
+    - Introduce yourself as: "My name is Tarsem Singh, and I am a Power BI expert with 8+ years of experience..."
+    - Show clear understanding of the client's needs.
+    - Briefly and naturally mention the case study below as a supporting example.
+    - Then explain how you will approach their needs (methodology, tools, tech stack).
+    - End with why you’re a good fit and include this portfolio link: {portfolio_link}
+    - Finish with "Best regards, Tarsem Singh"
+    - Keep the proposal under 450 words (max 600 tokens).
+    - Avoid technical jargon unless absolutely needed.
+
+    The client’s job description starts with: "{first_line}"
+
+    Here’s a relevant project you can refer to:
+    {case_study}
+
+    The full job description is:
+    {jd_text}
+    **Mandatory Guidelines:**
+    - Always start with \"Dear Client,\"
+    - Always introduce yourself with \"My name is Tarsem Singh...\"
+    - Always end with \"Best regards, Tarsem Singh\"
+    - Use ONLY verified past projects from our database
+    - Maximum 2 case studies, even 1 if highly relevant
+    - Problem-Solution-Outcome format for case studies
+    - Professional but conversational tone
+    - Max 450 words
+    - No technical jargon unless required
+
+    **Strict Prohibitions:**
+    - No fictional projects/statistics
+    - No generic sales pitches
+    - No assumptions beyond JD scope
+    """
 
     encoding = tiktoken.encoding_for_model("gpt-4")
     token_count = len(encoding.encode(prompt))
