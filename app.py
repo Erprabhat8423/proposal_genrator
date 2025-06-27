@@ -143,7 +143,6 @@ def generate_proposal(jd_text, similar,tone="Humanized"):
     - Immediately follow that with a 4–5 line custom hook that reflects the client's real needs and highlights relevant hard/soft skills based on the JD.
     - Blend the hook naturally with the rest of the first paragraph — do not write it as a separate section or bullet points.
     - Highlight a matching case study if available (use the format given below), and if a project link is present, include it naturally in the proposal using plain language like: "You can explore this case study here: [link]".
-    - Emphasize practical technical skills: Power BI, data modeling (star/snowflake), DAX, Power Query, Azure, SQL, ETL pipelines, and requirement gathering.
     - Focus on how the developer will ensure clean architecture, collaboration with consultants, and meaningful reporting.
      {language_guidelines}
     - End with the portfolio link and signature: "Best regards, Tarsem Singh"
