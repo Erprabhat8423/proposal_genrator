@@ -49,17 +49,8 @@ def find_similar_proposals(jd_text, top_n=3):
 
 def extract_skills_with_llm(jd_text):
     prompt = f"""
-    From the following job description, extract only relevant skills and organize them into clean sections.
-
-    You must:
-    - Only show a section (Hard Skills, Tools & Platforms, or Soft Skills) if it is clearly relevant in the job description.
-    - Use this exact section format if applicable:
-        🔹 Hard Skills
-        🔹 Tools & Platforms
-        🔹 Soft Skills
-    - Use bullet points under each section.
-    - Don't include any empty or placeholder sections.
-    - No headings or explanation outside the bullet sections.
+    Extract only the key technical and soft skills mentioned in the following job description.
+    Respond with a clean, comma-separated list (no headings or extra text).
 
     Job Description:
     {jd_text}
@@ -69,106 +60,107 @@ def extract_skills_with_llm(jd_text):
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=600
+        max_tokens=500
     )
 
     skills_text = response.choices[0].message.content.strip()
-    return skills_text
-
-def generate_hook_paragraph(jd_text):
-    prompt = f"""
-    Given the job description below, write a strong hook paragraph (4-5 lines max) that combines the job's main goal and the top skill areas required.
-    The hook should:
-    - Sound client-focused
-    - Show strategic and consultative thinking
-    - Not be generic or salesy
-    - Mix the core job need and required expertise naturally
-
-    Job Description:
-    {jd_text}
-    """
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=150
-    )
-    return response.choices[0].message.content.strip()
-
+    return [s.strip() for s in skills_text.split(",") if s.strip()]
 
 
 # Proposal Generator
-def generate_proposal(jd_text, similar,tone="Humanized"):
+def generate_proposal(jd_text, similar):
     portfolio_link = similar[0][0]['portfolio_link'] if similar else ""
     case_study = "".join([
         f"""
-        - Project: {proj['client_name']} ({proj['industry']})
-        Problem: {proj.get('problem', '')}
-        Our Solution: {proj.get('solution', '')}
-        Results Achieved: {proj.get('outcome', '')}
-        Project Link: {proj.get('project_link', '')}
-        """
+    - Project: {proj['client_name']} ({proj['industry']})
+      Problem: {proj.get('problem', '')}
+      Our Solution: {proj.get('solution', '')}
+      Results Achieved: {proj.get('outcome', '')}
+      project link: {proj.get('project_link', '')}
+    """
         for proj, _ in similar[:1]
     ]) if similar else ""
 
-    if tone == "Humanized":
-        language_guidelines = """
-        - Use plain, friendly English (8th to 10th grade reading level).
-        - Soften formal words: say “I’ve worked on…” instead of “I specialize in…”, and “I make sure…” instead of “I ensure…”.
-        - Avoid resume-style language. Make it sound like a helpful expert having a conversation.
-        - Be warm, honest, and confident — not robotic or salesy.
-        """
-    else:
-        language_guidelines = """
-        - Use confident, professional business language.
-        - Be clear and concise but keep a natural tone — no buzzwords or filler.
-        - Keep the tone consultative and outcome-focused.
-        """
-  
+    # prompt = f"""
+    # Generate a client proposal following this EXACT structure:
 
+    # - Start with: \"Dear Client,\"
+    # - Introduce yourself: \"My name is Tarsem Singh, and I am a Power BI expert with 8+ years of experience in business intelligence, data modeling, and dashboarding.\"
+    # - Briefly state your understanding of the client's needs.
+
+    # 2. **Relevant Case Study** (Include ONLY if relevant)
+    # {case_study}
+
+    # 3. **Proposed Approach**
+    # - Our understanding of your requirements
+    # - Step-by-step methodology
+    # - Technology stack recommendation
+    # - Questions for clarification (if needed)
+
+    # 4. **Why Choose Me?**
+    # - Highlight your differentiators specific to the project needs
+    # - Include portfolio link: {portfolio_link}
+    # - Final call to action
+
+    # **Job Description:**
+    # {jd_text}
+
+    # **Mandatory Guidelines:**
+    # - Always start with \"Dear Client,\"
+    # - Always introduce yourself with \"My name is Tarsem Singh...\"
+    # - Always end with \"Best regards, Tarsem Singh\"
+    # - Use ONLY verified past projects from our database
+    # - Maximum 2 case studies, even 1 if highly relevant
+    # - Problem-Solution-Outcome format for case studies
+    # - Professional but conversational tone
+    # - Max 600 words
+    # - No technical jargon unless required
+
+    # **Strict Prohibitions:**
+    # - No fictional projects/statistics
+    # - No generic sales pitches
+    # - No assumptions beyond JD scope
+    # """
     first_line = jd_text.strip().split("\n")[0] if jd_text.strip() else "your project requirements"
-    # Detect tool preference from JD
-    jd_lower = jd_text.lower()
-    if "power bi" in jd_lower and "tableau" in jd_lower:
-        expert_intro = "My name is Tarsem Singh, and I am a Certified Power BI expert with 8+ years of hands-on development experience..."
-    elif "tableau" in jd_lower:
-        expert_intro = "My name is Tarsem Singh, and I am a Certified Tableau expert with 8+ years of hands-on development experience..."
-    else:
-        expert_intro = "My name is Tarsem Singh, and I am a Certified Power BI expert with 8+ years of hands-on development experience..."
+
     prompt = f"""
-    You are an expert proposal writer generating a human-like, natural, and customized proposal based on the job description below.
+    You are an expert proposal writer generating a simple, casual, and custom proposal for a job description.
 
-    - Write a flowing narrative that sounds human and consultative — not robotic.
-    - Start by introducing the applicant: "{expert_intro}"
-    - Immediately follow that with a 4–5 line custom hook that reflects the client's real needs and highlights relevant hard/soft skills based on the JD.
-    - Blend the hook naturally with the rest of the first paragraph — do not write it as a separate section or bullet points.
-    - Highlight a matching case study if available (use the format given below), and if a project link is present, include it naturally in the proposal using plain language like: "You can explore this case study here: [link]".
-    - Emphasize practical technical skills: Power BI, data modeling (star/snowflake), DAX, Power Query, Azure, SQL, ETL pipelines, and requirement gathering.
-    - Focus on how the developer will ensure clean architecture, collaboration with consultants, and meaningful reporting.
-     {language_guidelines}
-    - End with the portfolio link and signature: "Best regards, Tarsem Singh"
+    - Use simple, easy-to-understand language (8th–10th grade level).
+    - Do NOT use headings (no "Relevant Case Study", "Proposed Approach" etc.)
+    - Write as a natural flowing narrative, not in sections.
+    - Begin with "Dear Client,"
+    - Introduce yourself as: "My name is Tarsem Singh, and I am a Power BI expert with 8+ years of experience..."
+    - Show clear understanding of the client's needs.
+    - Briefly and naturally mention the case study below as a supporting example.
+    - Then explain how you will approach their needs (methodology, tools, tech stack).
+    - End with why you’re a good fit and include this portfolio link: {portfolio_link}
+    - Finish with "Best regards, Tarsem Singh"
+    - Keep the proposal under 450 words (max 600 tokens).
+    - Avoid technical jargon unless absolutely needed.
 
-    The client's job description starts with: "{first_line}"
+    The client’s job description starts with: "{first_line}"
 
-    Here’s a relevant project to reference:
+    Here’s a relevant project you can refer to:
     {case_study}
 
     The full job description is:
     {jd_text}
+    **Mandatory Guidelines:**
+    - Always start with \"Dear Client,\"
+    - Always introduce yourself with \"My name is Tarsem Singh...\"
+    - Always end with \"Best regards, Tarsem Singh\"
+    - Use ONLY verified past projects from our database
+    - Maximum 2 case studies, even 1 if highly relevant
+    - Problem-Solution-Outcome format for case studies
+    - Professional but conversational tone
+    - Max 250 words
+    - No technical jargon unless required
 
-    **Must-Haves:**
-    - Start with "Dear Client," and introduce yourself immediately.
-    - Include a custom intro hook with key skills from the JD.
-    - Mention no more than 1–2 projects using Problem-Solution-Outcome.
-    - Use ONLY verified past projects from the data provided.
-    - End with: "You can view my portfolio here: {portfolio_link} \n\nBest regards, Tarsem Singh"
-    - Limit to 300 words.
-
-    **Prohibited:**
-    - No fake stats or stories.
-    - No generic phrases or templated filler.
-    - No headings or bullet points in the final proposal.
-    - No assumptions beyond the job description.
+    **Strict Prohibitions:**
+    - No fictional projects/statistics
+    - No generic sales pitches
+    - No assumptions beyond JD scope
     """
 
     encoding = tiktoken.encoding_for_model("gpt-4")
@@ -181,7 +173,9 @@ def generate_proposal(jd_text, similar,tone="Humanized"):
         max_tokens=1000
     )
 
-    return response.choices[0].message.content.strip(), token_count
+    return response.choices[0].message.content, token_count
+
+
 
 
 # Streamlit UI
@@ -193,19 +187,19 @@ with col1:
     tab1, tab2 = st.tabs(["📑 Generate Proposal", "📂 Add Project Data"])
 
     with tab1:
-
         jd_text = st.text_area("Paste client's project requirements:", height=250)
-        
-        tone = st.radio(
-            label="",
-            options=["Humanized", "Formal"],
-            horizontal=True
-        )
+        if st.button("Extract Skills"):
+            if jd_text.strip():
+                skills = extract_skills_with_llm(jd_text)
+                if skills:
+                    st.success(f"Extracted Skills: {', '.join(skills)}")
+                else:
+                    st.warning("No skills found. Please refine your job description.")
         if st.button("Generate Proposal"):
             if jd_text.strip():
                 similar = find_similar_proposals(jd_text)
                 if similar:
-                    proposal, tokens = generate_proposal(jd_text, similar, tone=tone)
+                    proposal, tokens = generate_proposal(jd_text, similar)
                     st.subheader("📄 Customized Proposal")
                     st.markdown(proposal)
                     st.info(f"🧠 OpenAI Token Estimate: {tokens} tokens")
