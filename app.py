@@ -195,11 +195,11 @@ with col1:
     with tab1:
 
         jd_text = st.text_area("Paste client's project requirements:", height=250)
-        
         tone = st.radio(
             label="",
             options=["Humanized", "Formal"],
-            horizontal=True
+            horizontal=True,
+            label_visibility="collapsed"
         )
         if st.button("Generate Proposal"):
             if jd_text.strip():
