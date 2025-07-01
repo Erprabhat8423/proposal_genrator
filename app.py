@@ -112,7 +112,7 @@ def generate_hook_paragraph(jd_text):
 def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, similar):
     portfolio_link = similar[0][0]['portfolio_link'] if similar else ""
     case_study = "\n\n".join([
-        f"Project: {proj['client_name']} ({proj['industry']})\nProblem: {proj.get('problem', '')}\nOur Solution: {proj.get('solution', '')}\nResults Achieved: {proj.get('outcome', '')}\nProject Link: {proj.get('project_link', '')}"
+        f"Project: {proj['client_name']} ({proj['industry']})\nProblem: {proj.get('problem', '')}\nOur Solution: {proj.get('solution', '')}\nResults Achieved: {proj.get('outcome', '')}\nProject Link: [View Project]({proj.get('project_link', '')})"
         for proj, _ in similar[:2]
     ]) if similar else ""
 
@@ -124,7 +124,7 @@ def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, si
 
     Paragraph 2 – Mention 1–2 relevant past projects and their impact. Include project links naturally.
     {case_study}
-
+    If available, include links like: "You can explore that solution here: [View Project](...)"
     Paragraph 3 – Ask if the client has any preferences, data sources, or requirements.
 
     Paragraph 4 – Close with CTA and sign-off: "You can view more of my work here: {portfolio_link}\n\nBest regards,\nTarsem Singh"
