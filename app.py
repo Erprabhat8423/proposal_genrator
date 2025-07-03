@@ -108,6 +108,31 @@ def generate_hook_paragraph(jd_text):
     )
     return response.choices[0].message.content.strip()
 
+def extract_clarification_questions(jd_text, max_q=3):
+    """
+    Use GPT-4o to pull out concrete clarifying questions the freelancer
+    should ask the client. Returns a list of short questions (strings).
+    """
+    prompt = f"""
+    From the job description below, list up to {max_q} concrete questions
+    you would ask the client to remove any ambiguity (timeline, data access, 
+    success metrics, tech stack constraints, etc.). 
+    • Only include questions whose answers are NOT obvious in the text. 
+    • Return each question on a new line, no numbering, no extra text.
+
+    Job Description:
+    {jd_text}
+    """
+    resp = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=120,
+    )
+    # Split on newlines and remove empties
+    return [q.strip() for q in resp.choices[0].message.content.split("\n") if q.strip()]
+
+
 # Step 4: Generate Final Proposal
 def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, similar):
     portfolio_link = similar[0][0]['portfolio_link'] if similar else ""
@@ -115,6 +140,13 @@ def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, si
         f"Project: {proj['client_name']} ({proj['industry']})\nProblem: {proj.get('problem', '')}\nOur Solution: {proj.get('solution', '')}\nResults Achieved: {proj.get('outcome', '')}\nProject Link: [View Project]({proj.get('project_link', '')})"
         for proj, _ in similar[:2]
     ]) if similar else ""
+
+    clar_qs = extract_clarification_questions(jd_text)
+    if clar_qs:
+        clar_section = "Here are a few quick clarifications to ensure we hit the ground running:\n" + \
+                       "\n".join(f"- {q}" for q in clar_qs)
+    else:
+        clar_section = "Do you have any preferences, data sources, or special constraints we should be aware of?"
 
     prompt = f"""
     Write a professional, human-sounding proposal under 300 words using this structure:
@@ -125,7 +157,8 @@ def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, si
     Paragraph 2 – Mention 1–2 relevant past projects and their impact. Include project links naturally.
     {case_study}
     If available, include links like: "You can explore that solution here: [View Project](...)"
-    Paragraph 3 – Ask if the client has any preferences, data sources, or requirements.
+    Paragraph 3 – Ask clarifying questions if needed.
+    {clar_section}
 
     Paragraph 4 – Close with CTA and sign-off: "You can view more of my work here: {portfolio_link}\n\nBest regards,\nTarsem Singh"
 
@@ -133,6 +166,9 @@ def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, si
     - Do not explain the job description.
     - Avoid salesy or robotic tone.
     - Use plain, conversational English.
+    - Always start with \"Dear Client,\"
+    - Always introduce yourself with \"My name is Tarsem Singh...\"
+    - Always end with \"Best regards, Tarsem Singh\"
     """
     encoding = tiktoken.encoding_for_model("gpt-4o")
     token_count = len(encoding.encode(prompt))
@@ -146,159 +182,6 @@ def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, si
 
     return response.choices[0].message.content.strip(), token_count, prompt
 
-# Step 4: Generate Final Proposal
-# def generate_final_proposal(jd_summary, skills_text, hook_paragraph, jd_text, similar):
-#     portfolio_link = similar[0][0]['portfolio_link'] if similar else ""
-#     case_study = "\n\n".join([
-#         f"""
-#         - Project: {proj['client_name']} ({proj['industry']})
-#         Problem: {proj.get('problem', '')}
-#         Our Solution: {proj.get('solution', '')}
-#         Results Achieved: {proj.get('outcome', '')}
-#         Project Link: [View Project]({proj.get('project_link', '')})
-#         """
-#         for proj, _ in similar[:2]
-#     ]) if similar else ""
-
-#     jd_lower = jd_text.lower()
-#     if "power bi" in jd_lower and "tableau" in jd_lower:
-#         expert_intro = "My name is Tarsem Singh, and I’m a certified Power BI expert with over 8 years of experience. I’ve successfully delivered similar solutions using Power BI, Tableau, Informatica, and SAP BusinessObjects to help teams turn complex data into actionable insights."
-#     elif "tableau" in jd_lower:
-#         expert_intro = "My name is Tarsem Singh, and I’m a certified Tableau expert with over 8 years of experience. I’ve worked on various dashboard and BI solutions using Tableau and related tools to deliver impactful reporting and streamlined data workflows."
-#     else:
-#         expert_intro = "My name is Tarsem Singh, and I’m a certified Power BI expert with over 8 years of experience building dashboards, reporting systems, and end-to-end BI pipelines across diverse industries."
-
-#     prompt = f"""
-#     You are writing a professional proposal in simple, natural English that sounds like it came directly from a helpful and experienced freelancer — not an assistant.
-
-#     Structure the proposal using the following format:
-
-#     **Paragraph 1 – Introduction (Do NOT repeat the JD):**
-#     Start with "Dear Client," 
-#     Then introduce yourself as: "{expert_intro}"
-#     Immediately follow with a 4–5 line custom hook that reflects the client's real needs and highlights relevant hard/soft skills based on the JD.
-
-#     **Paragraph 2 – Relevant Projects (1-2 projects):**
-#     Mention what the client needed, what you built, and what the impact was.
-#     If available, include links like: "You can explore that solution here: [View Project](...)"
-
-#     Use the following as reference:
-#     {case_study}
-
-#     **Paragraph 3 – Ask for Clarifications:**
-#     Ask politely if the client has preferences, data sources, or specific requirements.
-
-#     **Paragraph 4 – CTA + Sign-off:**
-#     Finish with:
-#     "I’d love to connect and discuss the project in more detail."
-#     "You can view more of my work here: {portfolio_link}"
-#     "Best regards,\nTarsem Singh"
-
-#     Guidelines:
-#     - Use simple, human language.
-#     - No bullet points or headings in the final message.
-#     - Keep it under 300 words.
-#     - Write like a freelancer, not an AI assistant.
-
-#     Client JD:
-#     {jd_text}
-#     """
-
-#     encoding = tiktoken.encoding_for_model("gpt-4o")
-#     token_count = len(encoding.encode(prompt))
-
-#     response = openai.ChatCompletion.create(
-#         model="gpt-4o",
-#         messages=[{"role": "user", "content": prompt}],
-#         temperature=0.4,
-#         max_tokens=800
-#     )
-
-#     return response.choices[0].message.content.strip(), token_count, prompt
-
-
-
-
-# Proposal Generator
-# def generate_proposal(jd_text, similar):
-#     portfolio_link = similar[0][0]['portfolio_link'] if similar else ""
-#     case_study = "".join([
-#         f"""
-#         - Project: {proj['client_name']} ({proj['industry']})
-#         Problem: {proj.get('problem', '')}
-#         Our Solution: {proj.get('solution', '')}
-#         Results Achieved: {proj.get('outcome', '')}
-#         Project Link: {proj.get('project_link', '')}
-#         """
-#         for proj, _ in similar[:1]
-#     ]) if similar else ""
-
-
-#     language_guidelines = """
-#     - Use plain, simple English (8th to 10th grade reading level).
-#     - Soften formal words: say “I’ve worked on…” instead of “I specialize in…”, and “I make sure…” instead of “I ensure…” insted of "we" use "I".
-#     - Avoid resume-style language. Make it sound like a helpful expert having a conversation.
-#     - Be warm, honest, and confident — not robotic or salesy.
-#     """
-
-
-#     first_line = jd_text.strip().split("\n")[0] if jd_text.strip() else "your project requirements"
-#     # Detect tool preference from JD
-#     jd_lower = jd_text.lower()
-#     if "power bi" in jd_lower and "tableau" in jd_lower:
-#         expert_intro = "My name is Tarsem Singh, and I am a Certified Power BI expert with 8+ years of hands-on development experience..."
-#     elif "tableau" in jd_lower:
-#         expert_intro = "My name is Tarsem Singh, and I am a Certified Tableau expert with 8+ years of hands-on development experience..."
-#     else:
-#         expert_intro = "My name is Tarsem Singh, and I am a Certified Power BI expert with 8+ years of hands-on development experience..."
-#     prompt = f"""
-#     You are an expert proposal writer generating a human-like, natural, and customized proposal based on the job description below.
-
-#     - Write a flowing narrative that sounds human and consultative — not robotic.
-#     - Start by introducing the applicant: "{expert_intro}"
-#     - Immediately follow that with a 4–5 line custom hook that reflects the client's real needs and highlights relevant hard/soft skills based on the JD.
-#     - For the last point: Tell what you've been doing or have experties with and how it relates to the client's needs later.
-#     - Blend the hook naturally with the rest of the first paragraph — do not write it as a separate section or bullet points.
-#     - Highlight a matching case study if available (use the format given below), and if a project link is present, include it naturally in the proposal using plain language like: "You can explore this case study here: [link]".
-#     - Focus on how the developer will ensure clean architecture, collaboration with consultants, and meaningful reporting.
-#      {language_guidelines}
-#     - End with the portfolio link and signature: "Best regards, Tarsem Singh"
-
-#     The client's job description starts with: "{first_line}"
-
-#     Here’s a relevant project to reference:
-#     {case_study}
-
-#     The full job description is:
-#     {jd_text}
-
-#     **Must-Haves:**
-#     - Start with "Dear Client," and introduce yourself immediately.
-#     - Include a custom intro hook with key skills from the JD.
-#     - Mention no more than 1–2 projects using Problem-Solution-Outcome.
-#     - Use ONLY verified past projects from the data provided.
-#     - End with: "You can view my portfolio here: {portfolio_link} \n\nBest regards, Tarsem Singh"
-#     - Limit to 300 words.
-
-#     **Prohibited:**
-#     - No fake stats or stories.
-#     - No generic phrases or templated filler.
-#     - No headings or bullet points in the final proposal.
-#     - No assumptions beyond the job description.
-#     """
-
-#     encoding = tiktoken.encoding_for_model("gpt-4o")
-#     token_count = len(encoding.encode(prompt))
-
-#     response = openai.ChatCompletion.create(
-#         model="gpt-4o",
-#         messages=[{"role": "user", "content": prompt}],
-#         temperature=0.5,
-#         max_tokens=1000
-#     )
-
-#     return response.choices[0].message.content.strip(), token_count, prompt
-
 
 # Streamlit UI
 st.set_page_config(layout="wide")
@@ -308,28 +191,6 @@ with col1:
     st.title("🤖 AI Proposal Architect")
     tab1, tab2 = st.tabs(["📑 Generate Proposal", "📂 Add Project Data"])
 
-    # with tab1:
-
-    #     jd_text = st.text_area("Paste client's project requirements:", height=250)
-    #     if st.button("Generate Proposal"):
-    #         if jd_text.strip():
-    #             similar = find_similar_proposals(jd_text)
-    #             if similar:
-    #                 proposal, tokens, prompt = generate_proposal(jd_text, similar)
-    #                 st.subheader("📄 Customized Proposal")
-    #                 st.markdown(proposal)
-    #                 st.info(f"🧠 OpenAI Token Estimate: {tokens} tokens")
-    #                 st.markdown("### Prompt Used:")
-    #                 st.code(prompt, language="markdown")
-    #                 st.download_button("Download Proposal (.txt)", proposal.encode(), file_name="proposal.txt")
-
-    #                 st.subheader("🔍 Matched Case Studies")
-    #                 for proj, score in similar:
-    #                     st.markdown(f"**{proj['client_name']}** ({proj['industry']}) - Score: {score:.2f}")
-    #                     st.caption(f"Tools: {', '.join(proj['tools']) if isinstance(proj['tools'], list) else proj['tools']}")
-    #                     st.markdown(f"Problem: {proj['problem']}\n\nSolution: {proj['solution']}")
-    #             else:
-    #                 st.warning("No relevant case studies found. Please refine your input or add more data.")
     with tab1:
         jd_text = st.text_area("Paste client's project requirements:", height=250)
         if st.button("Generate Proposal"):
